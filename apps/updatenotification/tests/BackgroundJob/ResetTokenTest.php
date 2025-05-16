@@ -38,7 +38,10 @@ class ResetTokenTest extends TestCase {
 		);
 	}
 
-	public function testRunWithNotExpiredToken(): void { // Affirm if updater.secret.created <48 hours ago then `updater.secret` is left alone
+	/**
+	 * Affirm if updater.secret.created <48 hours ago then `updater.secret` is left alone.
+	 */
+	public function testKeepSecretWhenCreatedRecently(): void {
 		$this->timeFactory
 			->expects($this->atLeastOnce())
 			->method('getTime')
@@ -66,10 +69,13 @@ class ResetTokenTest extends TestCase {
 			->expects($this->once())
 			->method('debug');
 
-		$this->invokePrivate($this->resetTokenBackgroundJob, 'run', [null]);
+		static::invokePrivate($this->resetTokenBackgroundJob, 'run', [null]);
 	}
 
-	public function testRunWithExpiredToken(): void { // Affirm if updater.secret.created >48 hours ago then `updater.secret` is removed
+	/**
+	 * Affirm if updater.secret.created >48 hours ago then `updater.secret` is removed
+	 */
+	public function testSecretIsRemovedWhenOutdated(): void {
 		$this->timeFactory
 			->expects($this->atLeastOnce())
 			->method('getTime')
@@ -104,8 +110,8 @@ class ResetTokenTest extends TestCase {
 
 	public function testRunWithExpiredTokenAndReadOnlyConfigFile(): void { // Affirm if config_is_read_only is set that the secret is never reset
 		$this->timeFactory
-			->expects($this->never())
-			->method('getTime');
+				->expects($this->never())
+				->method('getTime');
 		$this->appConfig
 			->expects($this->never())
 			->method('getValueInt');
