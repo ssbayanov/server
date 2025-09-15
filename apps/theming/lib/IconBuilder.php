@@ -7,6 +7,7 @@
 namespace OCA\Theming;
 
 use Imagick;
+use ImagickDraw;
 use ImagickPixel;
 use OCP\Files\SimpleFS\ISimpleFile;
 
@@ -30,17 +31,18 @@ class IconBuilder {
 	 * @return string|false image blob
 	 */
 	public function getFavicon($app) {
-		if (!$this->imageManager->shouldReplaceIcons()) {
+		if (!$this->imageManager->canConvert('ICO')) {
 			return false;
 		}
 		try {
-			$favicon = new Imagick();
-			$favicon->setFormat('ico');
 			$icon = $this->renderAppIcon($app, 128);
 			if ($icon === false) {
 				return false;
 			}
 			$icon->setImageFormat('png32');
+
+			$favicon = new Imagick();
+			$favicon->setFormat('ico');
 
 			$clone = clone $icon;
 			$clone->scaleImage(16, 0);
@@ -111,79 +113,108 @@ class IconBuilder {
 			return false;
 		}
 
-		$color = $this->themingDefaults->getColorPrimary();
-
-		// generate background image with rounded corners
-		$cornerRadius = 0.2 * $size;
-		$background = '<?xml version="1.0" encoding="UTF-8"?>'
-			. '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:cc="http://creativecommons.org/ns#" width="' . $size . '" height="' . $size . '" xmlns:xlink="http://www.w3.org/1999/xlink">'
-			. '<rect x="0" y="0" rx="' . $cornerRadius . '" ry="' . $cornerRadius . '" width="' . $size . '" height="' . $size . '" style="fill:' . $color . ';" />'
-			. '</svg>';
-		// resize svg magic as this seems broken in Imagemagick
-		if ($mime === 'image/svg+xml' || substr($appIconContent, 0, 4) === '<svg') {
-			if (substr($appIconContent, 0, 5) !== '<?xml') {
-				$svg = '<?xml version="1.0"?>' . $appIconContent;
-			} else {
-				$svg = $appIconContent;
-			}
-			$tmp = new Imagick();
-			$tmp->setBackgroundColor(new ImagickPixel('transparent'));
-			$tmp->setResolution(72, 72);
-			$tmp->readImageBlob($svg);
-			$x = $tmp->getImageWidth();
-			$y = $tmp->getImageHeight();
-			$tmp->destroy();
-
-			// convert svg to resized image
-			$appIconFile = new Imagick();
-			$resX = (int)(72 * $size / $x);
-			$resY = (int)(72 * $size / $y);
-			$appIconFile->setResolution($resX, $resY);
-			$appIconFile->setBackgroundColor(new ImagickPixel('transparent'));
-			$appIconFile->readImageBlob($svg);
-
-			/**
-			 * invert app icons for bright primary colors
-			 * the default nextcloud logo will not be inverted to black
-			 */
-			if ($this->util->isBrightColor($color)
-				&& !$appIcon instanceof ISimpleFile
-				&& $app !== 'core'
-			) {
-				$appIconFile->negateImage(false);
-			}
-		} else {
-			$appIconFile = new Imagick();
-			$appIconFile->setBackgroundColor(new ImagickPixel('transparent'));
-			$appIconFile->readImageBlob($appIconContent);
-		}
-		// offset for icon positioning
 		$padding = 0.15;
-		$border_w = (int)($appIconFile->getImageWidth() * $padding);
-		$border_h = (int)($appIconFile->getImageHeight() * $padding);
-		$innerWidth = ($appIconFile->getImageWidth() - $border_w * 2);
-		$innerHeight = ($appIconFile->getImageHeight() - $border_h * 2);
-		$appIconFile->adaptiveResizeImage($innerWidth, $innerHeight);
-		// center icon
-		$offset_w = (int)($size / 2 - $innerWidth / 2);
-		$offset_h = (int)($size / 2 - $innerHeight / 2);
+		$color = $this->themingDefaults->getColorPrimary();
+		$appIconFile = null;
+		$appIconIsSvg = ($mime === 'image/svg+xml' || substr($appIconContent, 0, 4) === '<svg');
 
-		$finalIconFile = new Imagick();
-		$finalIconFile->setBackgroundColor(new ImagickPixel('transparent'));
-		$finalIconFile->readImageBlob($background);
-		$finalIconFile->setImageVirtualPixelMethod(Imagick::VIRTUALPIXELMETHOD_TRANSPARENT);
-		$finalIconFile->setImageArtifact('compose:args', '1,0,-0.5,0.5');
-		$finalIconFile->compositeImage($appIconFile, Imagick::COMPOSITE_ATOP, $offset_w, $offset_h);
-		$finalIconFile->setImageFormat('png24');
-		if (defined('Imagick::INTERPOLATE_BICUBIC') === true) {
-			$filter = Imagick::INTERPOLATE_BICUBIC;
-		} else {
-			$filter = Imagick::FILTER_LANCZOS;
+		// determine if SVG support is available
+		if ($appIconIsSvg && !$this->imageManager->canConvert('SVG')) {
+			return false;
 		}
-		$finalIconFile->resizeImage($size, $size, $filter, 1, false);
 
-		$appIconFile->destroy();
-		return $finalIconFile;
+		try {
+			// construct original image object
+			$appIconFile = new Imagick();
+			$appIconFile->setBackgroundColor(new ImagickPixel('transparent'));
+
+			if ($appIconIsSvg) {
+				// handle SVG images
+				// ensure proper XML declaration
+				if (substr($appIconContent, 0, 5) !== '<?xml') {
+					$svg = '<?xml version="1.0"?>' . $appIconContent;
+				} else {
+					$svg = $appIconContent;
+				}
+				// get dimensions for resolution calculation
+				$tmp = new Imagick();
+				$tmp->setBackgroundColor(new ImagickPixel('transparent'));
+				$tmp->setResolution(72, 72);
+				$tmp->readImageBlob($svg);
+				$x = $tmp->getImageWidth();
+				$y = $tmp->getImageHeight();
+				$tmp->destroy();
+				// set resolution for proper scaling
+				$resX = (int)(72 * $size / $x);
+				$resY = (int)(72 * $size / $y);
+				$appIconFile->setResolution($resX, $resY);
+				$appIconFile->readImageBlob($svg);
+			} else {
+				// handle non-SVG images
+				$appIconFile->readImageBlob($appIconContent);
+			}
+		} catch (\ImagickException $e) {
+			return false;
+		}
+		/**
+		 * invert app icons for bright primary colors
+		 * the default nextcloud logo will not be inverted to black
+		 */
+		if ($this->util->isBrightColor($color)
+			&& !$appIcon instanceof ISimpleFile
+			&& $app !== 'core'
+		) {
+			$appIconFile->negateImage(false);
+		}
+
+		// calculate final image size and position
+		$original_w = $appIconFile->getImageWidth();
+		$original_h = $appIconFile->getImageHeight();
+		$contentBox = (int)floor($size * (1 - 2 * $padding));
+		if ($contentBox < 1) {
+			$contentBox = $size; // fallback safety
+		}
+		$scaleX = $contentBox / $original_w;
+		$scaleY = $contentBox / $original_h;
+		$scale = min($scaleX, $scaleY);
+		$new_w = max(1, (int)floor($original_w * $scale));
+		$new_h = max(1, (int)floor($original_h * $scale));
+		$offset_w = (int)floor(($size - $new_w) / 2);
+		$offset_h = (int)floor(($size - $new_h) / 2);
+		// resize original image
+		$appIconFile->resizeImage($new_w, $new_h, Imagick::FILTER_LANCZOS, 1);
+		// construct final image object
+		try {
+			// image background
+			$finalIconFile = new Imagick();
+			$finalIconFile->setBackgroundColor(new ImagickPixel('transparent'));
+			// icon background
+			$finalIconFile->newImage($size, $size, new ImagickPixel('transparent'));
+			$finalIconFile->setImageFormat('PNG32');
+			$draw = new ImagickDraw();
+			$draw->setFillColor($color);
+			$cornerRadius = 0.2 * $size;
+			$draw->roundRectangle(0, 0, $size - 1, $size - 1, $cornerRadius, $cornerRadius);
+			$finalIconFile->drawImage($draw);
+			$draw->destroy();
+			// overlay icon
+			$finalIconFile->setImageVirtualPixelMethod(Imagick::VIRTUALPIXELMETHOD_TRANSPARENT);
+			$finalIconFile->setImageArtifact('compose:args', '1,0,-0.5,0.5');
+			$finalIconFile->compositeImage($appIconFile, Imagick::COMPOSITE_ATOP, $offset_w, $offset_h);
+			$finalIconFile->setImageFormat('PNG32');
+			if (defined('Imagick::INTERPOLATE_BICUBIC') === true) {
+				$filter = Imagick::INTERPOLATE_BICUBIC;
+			} else {
+				$filter = Imagick::FILTER_LANCZOS;
+			}
+			$finalIconFile->resizeImage($size, $size, $filter, 1, false);
+
+			return $finalIconFile;
+		} finally {
+			unset($appIconFile);
+		}
+
+		return false;
 	}
 
 	/**

@@ -100,7 +100,7 @@ class IconController extends Controller {
 			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
 		} catch (NotFoundException $e) {
 		}
-		if ($iconFile === null && $this->imageManager->shouldReplaceIcons()) {
+		if ($iconFile === null && $this->imageManager->canConvert('PNG')) {
 			$color = $this->themingDefaults->getColorPrimary();
 			try {
 				$iconFile = $this->imageManager->getCachedImage('favIcon-' . $app . $color);
@@ -145,7 +145,7 @@ class IconController extends Controller {
 			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
 		} catch (NotFoundException $e) {
 		}
-		if ($this->imageManager->shouldReplaceIcons()) {
+		if ($this->imageManager->canConvert('PNG')) {
 			$color = $this->themingDefaults->getColorPrimary();
 			try {
 				$iconFile = $this->imageManager->getCachedImage('touchIcon-' . $app . $color);

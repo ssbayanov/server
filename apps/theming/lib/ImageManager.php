@@ -90,7 +90,7 @@ class ImageManager {
 			throw new NotFoundException();
 		}
 
-		if (!$useSvg && $this->shouldReplaceIcons()) {
+		if (!$useSvg && $this->canConvert('PNG')) {
 			if (!$folder->fileExists($key . '.png')) {
 				try {
 					$finalIconFile = new \Imagick();
@@ -328,7 +328,7 @@ class ImageManager {
 	public function getSupportedUploadImageFormats(string $key): array {
 		$supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-		if ($key !== 'favicon' || $this->shouldReplaceIcons() === true) {
+		if ($key !== 'favicon' || $this->canConvert('SVG') === true) {
 			$supportedFormats[] = 'image/svg+xml';
 			$supportedFormats[] = 'image/svg';
 		}
@@ -364,17 +364,26 @@ class ImageManager {
 	 * @return bool
 	 */
 	public function shouldReplaceIcons() {
+		return $this->canConvert('SVG');
+	}
+
+	/**
+	 * Check if Imagemagick is enabled and if format is supported
+	 *
+	 * @return bool
+	 */
+	public function canConvert(string $format = 'SVG'): bool {
 		$cache = $this->cacheFactory->createDistributed('theming-' . $this->urlGenerator->getBaseUrl());
-		if ($value = $cache->get('shouldReplaceIcons')) {
+		if ($value = $cache->get('convert-' . $format)) {
 			return (bool)$value;
 		}
 		$value = false;
 		if (extension_loaded('imagick')) {
-			if (count(\Imagick::queryFormats('SVG')) >= 1) {
+			if (count(\Imagick::queryFormats($format)) >= 1) {
 				$value = true;
 			}
 		}
-		$cache->set('shouldReplaceIcons', $value);
+		$cache->set('convert-' . $format, $value);
 		return $value;
 	}
 
