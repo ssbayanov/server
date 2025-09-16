@@ -129,7 +129,7 @@ class AddExtraHeadersPluginTest extends TestCase {
 		$this->tree = $this->createMock(Tree::class);
 		$this->server->tree = $this->tree;
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->plugin = new AddExtraHeadersPlugin($this->logger);
+		$this->plugin = new AddExtraHeadersPlugin($this->logger, false);
 		$this->request = $this->createMock(RequestInterface::class);
 		$this->response = $this->createMock(ResponseInterface::class);
 	}

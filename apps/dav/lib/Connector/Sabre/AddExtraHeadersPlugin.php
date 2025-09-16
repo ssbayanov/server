@@ -8,6 +8,7 @@ declare(strict_types=1);
  */
 namespace OCA\DAV\Connector\Sabre;
 
+use OCA\DAV\Connector\PermissionsTrait;
 use Psr\Log\LoggerInterface;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\Server;
@@ -20,10 +21,14 @@ use Sabre\HTTP\ResponseInterface;
  * to display.
  */
 class AddExtraHeadersPlugin extends \Sabre\DAV\ServerPlugin {
+
+	use PermissionsTrait;
+
 	private ?Server $server = null;
 
 	public function __construct(
 		private LoggerInterface $logger,
+		private bool $isPublic = false,
 	) {
 	}
 
@@ -57,9 +62,10 @@ class AddExtraHeadersPlugin extends \Sabre\DAV\ServerPlugin {
 			$response->setHeader('X-NC-OwnerId', $ownerId);
 		}
 
-		$permissions = $node->getDavPermissions();
-		if ($permissions !== null) {
-			$response->setHeader('X-NC-Permissions', $permissions);
-		}
+		$permissions = $this->getPermissionString(
+			$this->isPublic,
+			$node->getDavPermissions()
+		);
+		$response->setHeader('X-NC-Permissions', $permissions);
 	}
 }

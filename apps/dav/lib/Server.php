@@ -384,7 +384,7 @@ class Server {
 						)
 					);
 				}
-				$this->server->addPlugin(new AddExtraHeadersPlugin($logger));
+				$this->server->addPlugin(new AddExtraHeadersPlugin($logger, false));
 				$this->server->addPlugin(new EnablePlugin(
 					\OCP\Server::get(IConfig::class),
 					\OCP\Server::get(BirthdayService::class),
