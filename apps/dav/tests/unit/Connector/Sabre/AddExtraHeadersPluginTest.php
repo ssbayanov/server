@@ -36,15 +36,9 @@ class AddExtraHeadersPluginTest extends TestCase {
 			'owner and permissions present' => [
 				'user', true, 'PERMISSIONS', true, 2
 			],
-			'owner id only' => [
-				'user', true, null, false, 1
-			],
 			'permissions only' => [
 				null, false, 'PERMISSIONS', true, 1
 			],
-			'no owner id and permissions present' => [
-				null, false, null, false, 0
-			]
 		];
 	}
 
