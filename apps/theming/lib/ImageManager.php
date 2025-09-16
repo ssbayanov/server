@@ -85,12 +85,13 @@ class ImageManager {
 	public function getImage(string $key, bool $useSvg = true): ISimpleFile {
 		$mime = $this->config->getAppValue('theming', $key . 'Mime', '');
 		$folder = $this->getRootFolder()->getFolder('images');
+		$useSvg = $useSvg && $this->canConvert('SVG');
 
 		if ($mime === '' || !$folder->fileExists($key)) {
 			throw new NotFoundException();
 		}
 		// if SVG was requested and is supported
-		if ($useSvg && $this->canConvert('SVG')) {
+		if ($useSvg) {
 			if (!$folder->fileExists($key . '.svg')) {
 				try {
 					$finalIconFile = new \Imagick();
@@ -114,7 +115,7 @@ class ImageManager {
 					$finalIconFile = new \Imagick();
 					$finalIconFile->setBackgroundColor('none');
 					$finalIconFile->readImageBlob($folder->getFile($key)->getContent());
-					$finalIconFile->setImageFormat('png32');
+					$finalIconFile->setImageFormat('PNG32');
 					$pngFile = $folder->newFile($key . '.png');
 					$pngFile->putContent($finalIconFile->getImageBlob());
 					return $pngFile;

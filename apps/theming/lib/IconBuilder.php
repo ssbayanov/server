@@ -98,7 +98,9 @@ class IconBuilder {
 	 * @return Imagick|false
 	 */
 	public function renderAppIcon($app, $size) {
-		$appIcon = $this->util->getAppIcon($app);
+		$supportSvg = $this->imageManager->canConvert('SVG');
+		// retrieve app icon
+		$appIcon = $this->util->getAppIcon($app, $supportSvg);
 		if ($appIcon instanceof ISimpleFile) {
 			$appIconContent = $appIcon->getContent();
 			$mime = $appIcon->getMimeType();
@@ -113,13 +115,11 @@ class IconBuilder {
 			return false;
 		}
 
-		$padding = 0.15;
-		$color = $this->themingDefaults->getColorPrimary();
 		$appIconFile = null;
 		$appIconIsSvg = ($mime === 'image/svg+xml' || substr($appIconContent, 0, 4) === '<svg');
 
-		// determine if SVG support is available
-		if ($appIconIsSvg && !$this->imageManager->canConvert('SVG')) {
+		// if source image is svg but svg not supported, abort
+		if ($appIconIsSvg && !$supportSvg) {
 			return false;
 		}
 
@@ -156,6 +156,20 @@ class IconBuilder {
 		} catch (\ImagickException $e) {
 			return false;
 		}
+		// calculate final image size and position
+		$padding = 0.85;
+		$original_w = $appIconFile->getImageWidth();
+		$original_h = $appIconFile->getImageHeight();
+		$contentSize = (int)floor($size * $padding);
+		$scale = min($contentSize / $original_w, $contentSize / $original_h);
+		$new_w = max(1, (int)floor($original_w * $scale));
+		$new_h = max(1, (int)floor($original_h * $scale));
+		$offset_w = (int)floor(($size - $new_w) / 2);
+		$offset_h = (int)floor(($size - $new_h) / 2);
+		$cornerRadius = 0.2 * $size;
+		$color = $this->themingDefaults->getColorPrimary();
+		// resize original image
+		$appIconFile->resizeImage($new_w, $new_h, Imagick::FILTER_LANCZOS, 1);
 		/**
 		 * invert app icons for bright primary colors
 		 * the default nextcloud logo will not be inverted to black
@@ -166,23 +180,6 @@ class IconBuilder {
 		) {
 			$appIconFile->negateImage(false);
 		}
-
-		// calculate final image size and position
-		$original_w = $appIconFile->getImageWidth();
-		$original_h = $appIconFile->getImageHeight();
-		$contentBox = (int)floor($size * (1 - 2 * $padding));
-		if ($contentBox < 1) {
-			$contentBox = $size; // fallback safety
-		}
-		$scaleX = $contentBox / $original_w;
-		$scaleY = $contentBox / $original_h;
-		$scale = min($scaleX, $scaleY);
-		$new_w = max(1, (int)floor($original_w * $scale));
-		$new_h = max(1, (int)floor($original_h * $scale));
-		$offset_w = (int)floor(($size - $new_w) / 2);
-		$offset_h = (int)floor(($size - $new_h) / 2);
-		// resize original image
-		$appIconFile->resizeImage($new_w, $new_h, Imagick::FILTER_LANCZOS, 1);
 		// construct final image object
 		try {
 			// image background
@@ -190,10 +187,8 @@ class IconBuilder {
 			$finalIconFile->setBackgroundColor(new ImagickPixel('transparent'));
 			// icon background
 			$finalIconFile->newImage($size, $size, new ImagickPixel('transparent'));
-			$finalIconFile->setImageFormat('PNG32');
 			$draw = new ImagickDraw();
 			$draw->setFillColor($color);
-			$cornerRadius = 0.2 * $size;
 			$draw->roundRectangle(0, 0, $size - 1, $size - 1, $cornerRadius, $cornerRadius);
 			$finalIconFile->drawImage($draw);
 			$draw->destroy();
