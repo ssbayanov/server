@@ -89,7 +89,25 @@ class ImageManager {
 		if ($mime === '' || !$folder->fileExists($key)) {
 			throw new NotFoundException();
 		}
-
+		// if SVG was requested and is supported
+		if ($useSvg && $this->canConvert('SVG')) {
+			if (!$folder->fileExists($key . '.svg')) {
+				try {
+					$finalIconFile = new \Imagick();
+					$finalIconFile->setBackgroundColor('none');
+					$finalIconFile->readImageBlob($folder->getFile($key)->getContent());
+					$finalIconFile->setImageFormat('SVG');
+					$svgFile = $folder->newFile($key . '.svg');
+					$svgFile->putContent($finalIconFile->getImageBlob());
+					return $svgFile;
+				} catch (\ImagickException $e) {
+					$this->logger->info('The image was requested to be no SVG file, but converting it to SVG failed: ' . $e->getMessage());
+				}
+			} else {
+				return $folder->getFile($key . '.svg');
+			}
+		}
+		// if SVG was not requested, but PNG is supported
 		if (!$useSvg && $this->canConvert('PNG')) {
 			if (!$folder->fileExists($key . '.png')) {
 				try {
@@ -107,7 +125,7 @@ class ImageManager {
 				return $folder->getFile($key . '.png');
 			}
 		}
-
+		// fallback to the original file
 		return $folder->getFile($key);
 	}
 

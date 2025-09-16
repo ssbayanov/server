@@ -97,10 +97,10 @@ class IconController extends Controller {
 		$iconFile = null;
 		try {
 			$iconFile = $this->imageManager->getImage('favicon', false);
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => $iconFile->getMimeType()]);
 		} catch (NotFoundException $e) {
 		}
-		if ($iconFile === null && $this->imageManager->canConvert('PNG')) {
+		if ($iconFile === null && ($this->imageManager->canConvert('SVG') || $this->imageManager->canConvert('PNG'))) {
 			$color = $this->themingDefaults->getColorPrimary();
 			try {
 				$iconFile = $this->imageManager->getCachedImage('favIcon-' . $app . $color);
@@ -111,11 +111,11 @@ class IconController extends Controller {
 				}
 				$iconFile = $this->imageManager->setCachedImage('favIcon-' . $app . $color, $icon);
 			}
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => $iconFile->getMimeType()]);
 		}
 		if ($response === null) {
 			$fallbackLogo = \OC::$SERVERROOT . '/core/img/favicon.png';
-			$response = new DataDisplayResponse($this->fileAccessHelper->file_get_contents($fallbackLogo), Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
+			$response = new DataDisplayResponse($this->fileAccessHelper->file_get_contents($fallbackLogo), Http::STATUS_OK, ['Content-Type' => 'image/png']);
 		}
 		$response->cacheFor(86400);
 		return $response;
@@ -142,10 +142,10 @@ class IconController extends Controller {
 		$response = null;
 		try {
 			$iconFile = $this->imageManager->getImage('favicon');
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => $iconFile->getMimeType()]);
 		} catch (NotFoundException $e) {
 		}
-		if ($this->imageManager->canConvert('PNG')) {
+		if ($this->imageManager->canConvert('SVG') || $this->imageManager->canConvert('PNG')) {
 			$color = $this->themingDefaults->getColorPrimary();
 			try {
 				$iconFile = $this->imageManager->getCachedImage('touchIcon-' . $app . $color);
@@ -156,7 +156,7 @@ class IconController extends Controller {
 				}
 				$iconFile = $this->imageManager->setCachedImage('touchIcon-' . $app . $color, $icon);
 			}
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/png']);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => $iconFile->getMimeType()]);
 		}
 		if ($response === null) {
 			$fallbackLogo = \OC::$SERVERROOT . '/core/img/favicon-touch.png';
