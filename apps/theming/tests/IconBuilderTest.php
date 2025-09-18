@@ -40,16 +40,13 @@ class IconBuilderTest extends TestCase {
 		$this->iconBuilder = new IconBuilder($this->themingDefaults, $this->util, $this->imageManager);
 	}
 
-	private function checkImagick() {
+	private function checkImagick(string $provider) {
 		if (!extension_loaded('imagick')) {
 			$this->markTestSkipped('Imagemagick is required for dynamic icon generation.');
 		}
 		$checkImagick = new \Imagick();
-		if (count($checkImagick->queryFormats('SVG')) < 1) {
-			$this->markTestSkipped('No SVG provider present.');
-		}
-		if (count($checkImagick->queryFormats('PNG')) < 1) {
-			$this->markTestSkipped('No PNG provider present.');
+		if (count($checkImagick->queryFormats($provider)) < 1) {
+			$this->markTestSkipped('No ' . $provider . ' provider present.');
 		}
 	}
 
@@ -65,7 +62,7 @@ class IconBuilderTest extends TestCase {
 
 	#[\PHPUnit\Framework\Attributes\DataProvider('dataRenderAppIcon')]
 	public function testRenderAppIcon(string $app, string $color, string $file): void {
-		$this->checkImagick();
+		$this->checkImagick('SVG');
 		$this->themingDefaults->expects($this->once())
 			->method('getColorPrimary')
 			->willReturn($color);
