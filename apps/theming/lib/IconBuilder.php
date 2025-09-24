@@ -31,7 +31,7 @@ class IconBuilder {
 	 * @return string|false image blob
 	 */
 	public function getFavicon($app) {
-		if (!$this->imageManager->canConvert('ICO')) {
+		if (!$this->imageManager->canConvert('PNG')) {
 			return false;
 		}
 		try {
@@ -39,10 +39,10 @@ class IconBuilder {
 			if ($icon === false) {
 				return false;
 			}
-			$icon->setImageFormat('png32');
+			$icon->setImageFormat('PNG32');
 
 			$favicon = new Imagick();
-			$favicon->setFormat('ico');
+			$favicon->setFormat('PNG32');
 
 			$clone = clone $icon;
 			$clone->scaleImage(16, 0);
