@@ -336,7 +336,7 @@ class IconBuilderTest extends TestCase {
 		$baseIcon->setImageFormat('PNG32');
 
 		$testIcon = new \Imagick();
-		$testIcon->setFormat('PNG32');
+		$testIcon->setFormat('ICO');
 		foreach ([16, 32, 64, 128] as $size) {
 			$clone = clone $baseIcon;
 			$clone->scaleImage($size, 0);

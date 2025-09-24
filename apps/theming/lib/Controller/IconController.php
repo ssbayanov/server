@@ -81,7 +81,7 @@ class IconController extends Controller {
 	 * Return a 32x32 favicon as png
 	 *
 	 * @param string $app ID of the app
-	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/png'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: string}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
+	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/png'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/x-icon'}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
 	 * @throws \Exception
 	 *
 	 * 200: Favicon returned
@@ -100,11 +100,11 @@ class IconController extends Controller {
 		// retrieve instance favorite icon
 		try {
 			$iconFile = $this->imageManager->getImage('favicon', false);
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => $iconFile->getMimeType()]);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
 		} catch (NotFoundException $e) {
 		}
 		// retrieve or generate app specific favorite icon
-		if ($this->imageManager->canConvert('PNG')) {
+		if (($this->imageManager->canConvert('PNG') || $this->imageManager->canConvert('SVG')) && $this->imageManager->canConvert('ICO')) {
 			$color = $this->themingDefaults->getColorPrimary();
 			try {
 				$iconFile = $this->imageManager->getCachedImage('favIcon-' . $app . $color);
@@ -115,7 +115,7 @@ class IconController extends Controller {
 				}
 				$iconFile = $this->imageManager->setCachedImage('favIcon-' . $app . $color, $icon);
 			}
-			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/png']);
+			$response = new FileDisplayResponse($iconFile, Http::STATUS_OK, ['Content-Type' => 'image/x-icon']);
 		}
 		// fallback to core favorite icon
 		if ($response === null) {

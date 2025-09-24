@@ -42,7 +42,7 @@ class IconBuilder {
 			$icon->setImageFormat('PNG32');
 
 			$favicon = new Imagick();
-			$favicon->setFormat('PNG32');
+			$favicon->setFormat('ICO');
 
 			$clone = clone $icon;
 			$clone->scaleImage(16, 0);

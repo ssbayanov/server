@@ -127,8 +127,11 @@ class IconControllerTest extends TestCase {
 			->willThrowException(new NotFoundException());
 		$this->imageManager->expects($this->any())
 			->method('canConvert')
-			->with('PNG')
-			->willReturn(false);
+			->willReturnMap([
+				['SVG', false],
+				['PNG', false],
+				['ICO', false],
+			]);
 		$fallbackLogo = \OC::$SERVERROOT . '/core/img/favicon.png';
 		$this->fileAccessHelper->expects($this->once())
 			->method('file_get_contents')

@@ -443,7 +443,7 @@
                                     "format": "binary"
                                 }
                             },
-                            "*/*": {
+                            "image/x-icon": {
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
