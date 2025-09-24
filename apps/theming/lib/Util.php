@@ -234,7 +234,6 @@ class Util {
 		}
 		// fallback to custom instance logo
 		if ($this->config->getAppValue('theming', 'logoMime', '') !== '') {
-			$logoFile = null;
 			try {
 				$folder = $this->appData->getFolder('global/images');
 				return $folder->getFile('logo');
@@ -244,14 +243,10 @@ class Util {
 		// fallback to core logo
 		if ($useSvg) {
 			$icon = \OC::$SERVERROOT . '/core/img/logo/logo.svg';
-			if (file_exists($icon)) {
-				return $icon;
-			}
+			return $icon;
 		} else {
 			$icon = \OC::$SERVERROOT . '/core/img/logo/logo.png';
-			if (file_exists($icon)) {
-				return $icon;
-			}
+			return $icon;
 		}
 	}
 

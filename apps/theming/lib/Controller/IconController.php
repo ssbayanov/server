@@ -81,7 +81,7 @@ class IconController extends Controller {
 	 * Return a 32x32 favicon as png
 	 *
 	 * @param string $app ID of the app
-	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/x-icon'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/x-icon'}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
+	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/png'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: string}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
 	 * @throws \Exception
 	 *
 	 * 200: Favicon returned
@@ -130,7 +130,7 @@ class IconController extends Controller {
 	 * Return a 512x512 icon for touch devices
 	 *
 	 * @param string $app ID of the app
-	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/png'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/x-icon'|'image/png'}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
+	 * @return DataDisplayResponse<Http::STATUS_OK, array{Content-Type: 'image/png'}>|FileDisplayResponse<Http::STATUS_OK, array{Content-Type: string}>|NotFoundResponse<Http::STATUS_NOT_FOUND, array{}>
 	 * @throws \Exception
 	 *
 	 * 200: Touch icon returned

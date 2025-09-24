@@ -437,7 +437,13 @@
                     "200": {
                         "description": "Favicon returned",
                         "content": {
-                            "image/x-icon": {
+                            "image/png": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            },
+                            "*/*": {
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
@@ -506,7 +512,7 @@
                                     "format": "binary"
                                 }
                             },
-                            "image/x-icon": {
+                            "*/*": {
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
