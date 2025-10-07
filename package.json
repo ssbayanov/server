@@ -15,7 +15,11 @@
   "type": "module",
   "scripts": {
     "build": "build/demi.sh build",
-    "postbuild": "npm run sass && npm run sass:icon",
+    "postbuild": "build/npm-post-build.sh",
+    "cypress": "cypress run --e2e",
+    "cypress:gui": "cypress open",
+    "cypress:version": "cypress version",
+    "dev": "build/demi.sh dev",
     "postinstall": "build/demi.sh ci",
     "lint": "eslint --suppressions-location build/eslint-baseline.json --no-error-on-unmatched-pattern ./cypress",
     "postlint": "build/demi.sh lint",
@@ -26,7 +30,10 @@
     "stylelint": "stylelint core/{css,src} apps/*/{css,src}",
     "stylelint:fix": "stylelint --fix core/{css,src} apps/*/{css,src}",
     "test": "build/demi.sh test",
-    "test:coverage": "build/demi.sh test:coverage"
+    "test:coverage": "build/demi.sh test:coverage",
+    "test:update-snapshots": "build/demi.sh test:update-snapshots",
+    "test:watch": "build/demi.sh --parallel test:watch",
+    "watch": "build/demi.sh --parallel watch"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
