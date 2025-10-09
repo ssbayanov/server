@@ -98,7 +98,8 @@ class Generator {
 	 */
 	public function generatePreviews(File $file, array $specifications, ?string $mimeType = null, bool $cacheResult = true): ISimpleFile {
 		//Make sure that we can read the file
-		if (!$file->isReadable()) {
+		$id = $file->getId();
+		if ($id === null || !$file->isReadable()) {
 			$this->logger->warning('Cannot read file: {path}, skipping preview generation.', ['path' => $file->getPath()]);
 			throw new NotFoundException('Cannot read file');
 		}
@@ -107,7 +108,7 @@ class Generator {
 			$mimeType = $file->getMimeType();
 		}
 
-		[$file->getId() => $previews] = $this->previewMapper->getAvailablePreviews([$file->getId()]);
+		[$id => $previews] = $this->previewMapper->getAvailablePreviews([$id]);
 
 		$previewVersion = null;
 		if ($file instanceof IVersionedPreviewFile) {
