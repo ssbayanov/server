@@ -9,9 +9,14 @@ declare(strict_types=1);
 namespace OCA\Encryption\Command;
 
 use OC\Encryption\Util;
+use OC\Files\SetupManager;
 use OC\Files\View;
+use OCA\Encryption\Crypto\Encryption;
+use OCP\Files\IRootFolder;
 use OCP\IConfig;
+use OCP\IUser;
 use OCP\IUserManager;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\QuestionHelper;
@@ -24,11 +29,13 @@ class CleanOrphanedKeys extends Command {
 	private View $rootView;
 
 	public function __construct(
-		protected Util $util,
 		protected IConfig $config,
 		protected QuestionHelper $questionHelper,
 		private IUserManager $userManager,
 		private Util $encryptionUtil,
+		private SetupManager $setupManager,
+		private IRootFolder $rootFolder,
+		private LoggerInterface $logger,
 	) {
 		parent::__construct();
 
@@ -50,22 +57,14 @@ class CleanOrphanedKeys extends Command {
 		$progress = new ProgressBar($output);
 		$progress->setFormat(" %message% \n [%bar%]");
 
-		foreach ($this->userManager->getBackends() as $backend) {
-			$limit = 500;
-			$offset = 0;
-
-			do {
-				$users = $backend->getUsers('', $limit, $offset);
-				foreach ($users as $user) {
-					$progress->setMessage('Scanning all keys for: ' . $user);
-					$progress->advance();
-					$this->setupUserFS($user);
-					$root = $this->encryptionUtil->getKeyStorageRoot() . '/' . $user . '/files_encryption/keys';
-					$userOrphanedKeys = $this->scanFolder($output, $root, $user);
-					$orphanedKeys = array_merge($orphanedKeys, $userOrphanedKeys);
-				}
-				$offset += $limit;
-			} while (count($users) >= $limit);
+		foreach ($this->userManager->getSeenUsers() as $user) {
+			$uid = $user->getUID();
+			$progress->setMessage('Scanning all keys for: ' . $uid);
+			$progress->advance();
+			$this->setupUserFileSystem($user);
+			$root = $this->encryptionUtil->getKeyStorageRoot() . '/' . $uid . '/files_encryption/keys';
+			$userOrphanedKeys = $this->scanFolder($output, $root, $uid);
+			$orphanedKeys = array_merge($orphanedKeys, $userOrphanedKeys);
 		}
 		$progress->setMessage('Scanned orphaned keys for all users');
 		$progress->finish();
@@ -94,9 +93,12 @@ class CleanOrphanedKeys extends Command {
 		$orphanedKeys = [];
 		foreach ($this->rootView->getDirectoryContent($folder) as $item) {
 			$path = $folder . '/' . $item['name'];
-			if ($this->stopCondition($path)) {
+			$stopValue = $this->stopCondition($path);
+			if ($stopValue === null) {
+				$this->logger->error('Reached unexpected state when scanning user\'s filesystem for orphaned encryption keys' . $path);
+			} elseif ($this->stopCondition($path)) {
 				$filePath = str_replace('files_encryption/keys/', '', $path);
-				if (!$this->rootView->getFileInfo($filePath, true, true)) {
+				if (!$this->rootView->file_exists($filePath)) {
 					$orphanedKeys[] = $path;
 				}
 			} else {
@@ -105,12 +107,17 @@ class CleanOrphanedKeys extends Command {
 		}
 		return $orphanedKeys;
 	}
-
-	private function stopCondition(string $path) : bool {
+	/**
+	 * Checks the stop considition for the recursion
+	 * following the logic that keys are stored in files_encryption/keys/<user>/<path>/<fileName>/OC_DEFAULT_MODULE/<key>.sharekey
+	 * @param string $path path of the current folder
+	 * @return bool|null true if we should stop and found a key, false if we should continue, null if we shouldn't end up here
+	 */
+	private function stopCondition(string $path) : ?bool {
 		if ($this->rootView->is_dir($path)) {
 			$content = $this->rootView->getDirectoryContent($path);
 
-			if (count($content) === 1 && $content[0]['name'] === 'OC_DEFAULT_MODULE') {
+			if (count($content) === 1 && $content[0]['name'] === Encryption::ID) {
 				$path = $path . '/' . $content[0]['name'];
 				if ($this->rootView->is_dir($path)) {
 					$content = $this->rootView->getDirectoryContent($path);
@@ -122,6 +129,8 @@ class CleanOrphanedKeys extends Command {
 			}
 			return false;
 		}
+		// We shouldn't end up here, because we return true when reaching the folder named after the file containing OC_DEFAULT_MODULE
+		return null;
 	}
 	private function deleteAll(array $keys, OutputInterface $output) {
 		foreach ($keys as $key) {
@@ -161,8 +170,8 @@ class CleanOrphanedKeys extends Command {
 	/**
 	 * setup user file system
 	 */
-	protected function setupUserFS(string $uid): void {
-		\OC_Util::tearDownFS();
-		\OC_Util::setupFS($uid);
+	protected function setupUserFileSystem(IUser $user): void {
+		$this->setupManager->tearDown();
+		$this->setupManager->setupForUser($user);
 	}
 }
