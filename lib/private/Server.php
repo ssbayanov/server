@@ -13,6 +13,7 @@ use OC\Accounts\AccountManager;
 use OC\App\AppManager;
 use OC\App\AppStore\Bundles\BundleFetcher;
 use OC\AppFramework\Bootstrap\Coordinator;
+use OC\AppFramework\Db\Snowflake;
 use OC\AppFramework\Http\Request;
 use OC\AppFramework\Http\RequestId;
 use OC\AppFramework\Utility\TimeFactory;
@@ -131,6 +132,7 @@ use OCA\Theming\ThemingDefaults;
 use OCA\Theming\Util;
 use OCP\Accounts\IAccountManager;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\ISnowflake;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Authentication\LoginCredentials\IStore;
 use OCP\Authentication\Token\IProvider as OCPIProvider;
@@ -284,6 +286,7 @@ class Server extends ServerContainer implements IServerContainer {
 		$this->registerAlias(\OCP\Template\ITemplateManager::class, \OC\Template\TemplateManager::class);
 
 		$this->registerAlias(IActionFactory::class, ActionFactory::class);
+		$this->registerAlias(ISnowflake::class, Snowflake::class);
 
 		$this->registerService(View::class, function (Server $c) {
 			return new View();

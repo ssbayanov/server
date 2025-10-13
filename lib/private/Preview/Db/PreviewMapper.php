@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OC\Preview\Db;
 
 use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\ISnowflake;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -29,6 +30,7 @@ class PreviewMapper extends QBMapper {
 	public function __construct(
 		IDBConnection $db,
 		private readonly IMimeTypeLoader $mimeTypeLoader,
+		private readonly ISnowflake $snowflake,
 	) {
 		parent::__construct($db, self::TABLE_NAME, Preview::class);
 	}
@@ -50,13 +52,15 @@ class PreviewMapper extends QBMapper {
 
 		if ($preview->getVersion() !== null && $preview->getVersion() !== '') {
 			$qb = $this->db->getQueryBuilder();
+			$id = $this->snowflake->id();
 			$qb->insert(self::VERSION_TABLE_NAME)
 				->values([
+					'id' => $id,
 					'version' => $preview->getVersion(),
 					'file_id' => $preview->getFileId(),
 				])
 				->executeStatement();
-			$entity->setVersionId($qb->getLastInsertId());
+			$entity->setVersionId($id);
 		}
 		return parent::insert($preview);
 	}
@@ -148,7 +152,7 @@ class PreviewMapper extends QBMapper {
 			));
 	}
 
-	public function getLocationId(string $bucket, string $objectStore): int {
+	public function getLocationId(string $bucket, string $objectStore): string {
 		$qb = $this->db->getQueryBuilder();
 		$result = $qb->select('id')
 			->from(self::LOCATION_TABLE_NAME)
@@ -159,12 +163,14 @@ class PreviewMapper extends QBMapper {
 		if ($data) {
 			return $data;
 		} else {
+			$id = $this->snowflake->id();
 			$qb->insert(self::LOCATION_TABLE_NAME)
 				->values([
+					'id' => $qb->createNamedParameter($id),
 					'bucket_name' => $qb->createNamedParameter($bucket),
 					'object_store_name' => $qb->createNamedParameter($objectStore),
 				])->executeStatement();
-			return $qb->getLastInsertId();
+			return $id;
 		}
 	}
 

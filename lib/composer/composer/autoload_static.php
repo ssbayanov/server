@@ -11,32 +11,32 @@ class ComposerStaticInit749170dad3f5e7f9ca158f5a9f04f6a2
     );
 
     public static $prefixLengthsPsr4 = array (
-        'O' =>
+        'O' => 
         array (
             'OC\\Core\\' => 8,
             'OC\\' => 3,
             'OCP\\' => 4,
         ),
-        'N' =>
+        'N' => 
         array (
             'NCU\\' => 4,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'OC\\Core\\' =>
+        'OC\\Core\\' => 
         array (
             0 => __DIR__ . '/../../..' . '/core',
         ),
-        'OC\\' =>
+        'OC\\' => 
         array (
             0 => __DIR__ . '/../../..' . '/lib/private',
         ),
-        'OCP\\' =>
+        'OCP\\' => 
         array (
             0 => __DIR__ . '/../../..' . '/lib/public',
         ),
-        'NCU\\' =>
+        'NCU\\' => 
         array (
             0 => __DIR__ . '/../../..' . '/lib/unstable',
         ),
@@ -117,6 +117,7 @@ class ComposerStaticInit749170dad3f5e7f9ca158f5a9f04f6a2
         'OCP\\AppFramework\\Db\\DoesNotExistException' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/DoesNotExistException.php',
         'OCP\\AppFramework\\Db\\Entity' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/Entity.php',
         'OCP\\AppFramework\\Db\\IMapperException' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/IMapperException.php',
+        'OCP\\AppFramework\\Db\\ISnowflake' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/ISnowflake.php',
         'OCP\\AppFramework\\Db\\MultipleObjectsReturnedException' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/MultipleObjectsReturnedException.php',
         'OCP\\AppFramework\\Db\\QBMapper' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/QBMapper.php',
         'OCP\\AppFramework\\Db\\TTransactional' => __DIR__ . '/../../..' . '/lib/public/AppFramework/Db/TTransactional.php',
@@ -1078,6 +1079,9 @@ class ComposerStaticInit749170dad3f5e7f9ca158f5a9f04f6a2
         'OC\\AppFramework\\Bootstrap\\ServiceAliasRegistration' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Bootstrap/ServiceAliasRegistration.php',
         'OC\\AppFramework\\Bootstrap\\ServiceFactoryRegistration' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Bootstrap/ServiceFactoryRegistration.php',
         'OC\\AppFramework\\Bootstrap\\ServiceRegistration' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Bootstrap/ServiceRegistration.php',
+        'OC\\AppFramework\\Db\\NextcloudSequenceResolver' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Db/NextcloudSequenceResolver.php',
+        'OC\\AppFramework\\Db\\Snowflake' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Db/Snowflake.php',
+        'OC\\AppFramework\\Db\\SnowflakeGenerator' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Db/SnowflakeGenerator.php',
         'OC\\AppFramework\\DependencyInjection\\DIContainer' => __DIR__ . '/../../..' . '/lib/private/AppFramework/DependencyInjection/DIContainer.php',
         'OC\\AppFramework\\Http' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Http.php',
         'OC\\AppFramework\\Http\\Dispatcher' => __DIR__ . '/../../..' . '/lib/private/AppFramework/Http/Dispatcher.php',

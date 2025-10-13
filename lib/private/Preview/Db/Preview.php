@@ -11,20 +11,24 @@ declare(strict_types=1);
 namespace OC\Preview\Db;
 
 use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\ISnowflake;
 use OCP\DB\Types;
 use OCP\Files\IMimeTypeDetector;
+use OCP\Server;
 
 /**
  * Preview entity mapped to the oc_previews and oc_preview_locations table.
  *
+ * @method string getId()
+ * @method void setId(string $id)
  * @method int getFileId() Get the file id of the original file.
  * @method void setFileId(int $fileId)
  * @method int getStorageId() Get the storage id of the original file.
  * @method void setStorageId(int $fileId)
  * @method int getOldFileId() Get the old location in the file-cache table, for legacy compatibility.
  * @method void setOldFileId(int $oldFileId)
- * @method int getLocationId() Get the location id in the preview_locations table. Only set when using an object store as primary storage.
- * @method void setLocationId(int $locationId)
+ * @method string getLocationId() Get the location id in the preview_locations table. Only set when using an object store as primary storage.
+ * @method void setLocationId(string $locationId)
  * @method string getBucketName() Get the bucket name where the preview is stored. This is stored in the preview_locations table.
  * @method string getObjectStoreName() Get the object store name where the preview is stored. This is stored in the preview_locations table.
  * @method int getWidth() Get the width of the preview.
@@ -46,7 +50,7 @@ use OCP\Files\IMimeTypeDetector;
  * @method string getEtag() Get the etag of the preview.
  * @method void setEtag(string $etag)
  * @method string|null getVersion() Get the version for files_versions_s3
- * @method void setVersionId(int $versionId)
+ * @method void setVersionId(string $versionId)
  * @method bool|null getIs() Get the version for files_versions_s3
  * @method bool isEncrypted() Get whether the preview is encrypted. At the moment every preview is unencrypted.
  * @method void setEncrypted(bool $encrypted)
@@ -57,7 +61,7 @@ class Preview extends Entity {
 	protected ?int $fileId = null;
 	protected ?int $oldFileId = null;
 	protected ?int $storageId = null;
-	protected ?int $locationId = null;
+	protected ?string $locationId = null;
 	protected ?string $bucketName = null;
 	protected ?string $objectStoreName = null;
 	protected ?int $width = null;
@@ -72,7 +76,7 @@ class Preview extends Entity {
 	protected ?bool $cropped = null;
 	protected ?string $etag = null;
 	protected ?string $version = null;
-	protected ?int $versionId = null;
+	protected ?string $versionId = null;
 	protected ?bool $encrypted = null;
 
 	public function __construct() {
@@ -91,6 +95,7 @@ class Preview extends Entity {
 		$this->addType('encrypted', Types::BOOLEAN);
 		$this->addType('etag', Types::STRING);
 		$this->addType('versionId', Types::STRING);
+		$this->setId(Server::get(ISnowflake::class)->id());
 	}
 
 	public static function fromPath(string $path, IMimeTypeDetector $mimeTypeDetector): Preview|false {
