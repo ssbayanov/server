@@ -1372,14 +1372,14 @@ class View {
 	 * @param string $relativePath
 	 * @return ICacheEntry|bool
 	 */
-	private function getCacheEntry($storage, $internalPath, $relativePath, $skipCache = false) {
+	private function getCacheEntry($storage, $internalPath, $relativePath) {
 		$cache = $storage->getCache($internalPath);
 		$data = $cache->get($internalPath);
 		$watcher = $storage->getWatcher($internalPath);
 
 		try {
 			// if the file is not in the cache or needs to be updated, trigger the scanner and reload the data
-			if (!$data || (isset($data['size']) && $data['size'] === -1) || $skipCache) {
+			if (!$data || (isset($data['size']) && $data['size'] === -1)) {
 				if (!$storage->file_exists($internalPath)) {
 					return false;
 				}
@@ -1409,7 +1409,7 @@ class View {
 	 *                                        'ext' to add only ext storage mount point sizes. Defaults to true.
 	 * @return \OC\Files\FileInfo|false False if file does not exist
 	 */
-	public function getFileInfo($path, $includeMountPoints = true, $skipCache = false) {
+	public function getFileInfo($path, $includeMountPoints = true) {
 		$this->assertPathLength($path);
 		if (!Filesystem::isValidPath($path)) {
 			return false;
@@ -1421,7 +1421,7 @@ class View {
 		$storage = $mount->getStorage();
 		$internalPath = $mount->getInternalPath($path);
 		if ($storage) {
-			$data = $this->getCacheEntry($storage, $internalPath, $relativePath, $skipCache);
+			$data = $this->getCacheEntry($storage, $internalPath, $relativePath);
 
 			if (!$data instanceof ICacheEntry) {
 				if (Cache\Scanner::isPartialFile($relativePath)) {
