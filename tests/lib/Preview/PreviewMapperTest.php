@@ -12,7 +12,7 @@ namespace Test\Preview;
 
 use OC\Preview\Db\Preview;
 use OC\Preview\Db\PreviewMapper;
-use OCP\AppFramework\Db\ISnowflake;
+use OCP\DB\ISnowflake;
 use OCP\IDBConnection;
 use OCP\Server;
 use Test\TestCase;

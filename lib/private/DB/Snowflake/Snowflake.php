@@ -10,9 +10,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: MIT
  */
 
-namespace OC\AppFramework\Db;
+namespace OC\DB\Snowflake;
 
-use OCP\AppFramework\Db\ISnowflake;
+use OCP\DB\ISnowflake;
 
 class Snowflake implements ISnowflake {
 
@@ -21,15 +21,16 @@ class Snowflake implements ISnowflake {
 	 */
 	private static array $generators = [];
 
-	public static function getGenerator(int $datacenter, int $workerId, NextcloudSequenceResolver $resolver): SnowflakeGenerator {
+	public static function getGenerator(int $datacenter, int $workerId, bool $isCLI, NextcloudSequenceResolver $resolver): SnowflakeGenerator {
 		$key = "{$datacenter}-{$workerId}";
 		if (!isset(self::$generators[$key])) {
 			$generator = new SnowflakeGenerator(
 				$datacenter,
 				$workerId,
 				$resolver,
+				$isCLI,
 			);
-			$generator->setStartTimeStamp(strtotime('2025-01-01') * 1000);
+			$generator->setStartTimeStamp((float)strtotime('2025-01-01') * 1000);
 			self::$generators[$key] = $generator;
 		}
 		return self::$generators[$key];
@@ -44,19 +45,17 @@ class Snowflake implements ISnowflake {
 
 	public function __construct(
 		NextcloudSequenceResolver $nextcloudSequenceResolver,
+		bool $isCLI,
 	) {
 		$this->generator = static::getGenerator(
-			-1, // ATM set randomely
+			-1, // ATM set randomly
 			self::generateWorkerId(gethostname()),
+			$isCLI,
 			$nextcloudSequenceResolver
 		);
 	}
 
-	public function id(): string {
-		return $this->generator->id();
-	}
-
-	public function parseId(string $id, bool $transform = false): array {
-		return SnowflakeGenerator::parseId($id, $transform);
+	public function nextId(): string {
+		return $this->generator->nextId();
 	}
 }

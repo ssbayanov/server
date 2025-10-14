@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace OC\Preview\Db;
 
 use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\ISnowflake;
+use OCP\DB\ISnowflake;
 use OCP\DB\Types;
 use OCP\Files\IMimeTypeDetector;
 use OCP\Server;
@@ -95,7 +95,7 @@ class Preview extends Entity {
 		$this->addType('encrypted', Types::BOOLEAN);
 		$this->addType('etag', Types::STRING);
 		$this->addType('versionId', Types::STRING);
-		$this->setId(Server::get(ISnowflake::class)->id());
+		$this->setId(Server::get(ISnowflake::class)->nextId());
 	}
 
 	public static function fromPath(string $path, IMimeTypeDetector $mimeTypeDetector): Preview|false {

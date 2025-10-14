@@ -34,6 +34,7 @@ class Version33000Date20250819110529 extends SimpleMigrationStep {
 			$table->addColumn('id', Types::BIGINT, ['notnull' => true, 'length' => 20, 'unsigned' => true]);
 			$table->addColumn('bucket_name', Types::STRING, ['notnull' => true, 'length' => 40]);
 			$table->addColumn('object_store_name', Types::STRING, ['notnull' => true, 'length' => 40]);
+			$table->addUniqueIndex(['bucket_name', 'object_store_name']);
 			$table->setPrimaryKey(['id']);
 		}
 
