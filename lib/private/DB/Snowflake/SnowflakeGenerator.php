@@ -115,7 +115,7 @@ class SnowflakeGenerator {
 			return gmp_strval($id);
 		} else {
 			// Faster version for 64-bits machine using bits-shifts
-			return (string)((($currentTime - $timestamp) << $timestampLeftMoveLength)
+			return (string)(((int)($currentTime - $timestamp) << $timestampLeftMoveLength)
 				| ($this->datacenter << $datacenterLeftMoveLength)
 				| ($this->workerId << $workerLeftMoveLength)
 				| ((int)$this->isCLI << $isCLILeftMoveLength)
