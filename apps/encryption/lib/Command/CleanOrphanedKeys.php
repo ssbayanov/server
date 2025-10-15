@@ -9,10 +9,12 @@ declare(strict_types=1);
 namespace OCA\Encryption\Command;
 
 use OC\Encryption\Util;
+use OC\Files\Node\Folder;
 use OC\Files\SetupManager;
 use OC\Files\View;
 use OCA\Encryption\Crypto\Encryption;
 use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -89,14 +91,21 @@ class CleanOrphanedKeys extends Command {
 		return self::SUCCESS;
 	}
 
-	private function scanFolder(OutputInterface $output, string $folder, string $user) : array {
+	private function scanFolder(OutputInterface $output, string $folderPath, string $user) : array {
 		$orphanedKeys = [];
-		foreach ($this->rootView->getDirectoryContent($folder) as $item) {
-			$path = $folder . '/' . $item['name'];
+		try {
+			$folder = $this->rootFolder->get($folderPath);
+		} catch (NotFoundException $e) {
+			// Happens when user doesn't have encrypted files
+			$this->logger->error('Error when accessing folder ' . $folderPath . ' for user ' . $user . '. ' . $e->getMessage());
+			return [];
+		}
+		foreach ($folder->getDirectoryListing() as $item) {
+			$path = $folderPath . '/' . $item->getName();
 			$stopValue = $this->stopCondition($path);
 			if ($stopValue === null) {
 				$this->logger->error('Reached unexpected state when scanning user\'s filesystem for orphaned encryption keys' . $path);
-			} elseif ($this->stopCondition($path)) {
+			} elseif ($stopValue) {
 				$filePath = str_replace('files_encryption/keys/', '', $path);
 				if (!$this->rootView->file_exists($filePath)) {
 					$orphanedKeys[] = $path;
@@ -114,14 +123,15 @@ class CleanOrphanedKeys extends Command {
 	 * @return bool|null true if we should stop and found a key, false if we should continue, null if we shouldn't end up here
 	 */
 	private function stopCondition(string $path) : ?bool {
+		$folder = $this->rootFolder->get($path);
 		if ($this->rootView->is_dir($path)) {
-			$content = $this->rootView->getDirectoryContent($path);
+			$content = $folder->getDirectoryListing();
 
-			if (count($content) === 1 && $content[0]['name'] === Encryption::ID) {
-				$path = $path . '/' . $content[0]['name'];
+			if (count($content) === 1 && $content[0]->getName() === Encryption::ID) {
+				$path = $path . '/' . $content[0]->getName();
 				if ($this->rootView->is_dir($path)) {
 					$content = $this->rootView->getDirectoryContent($path);
-					$path = $path . '/' . $content[0]['name'];
+					$path = $path . '/' . $content[0]->getName();
 					if (count($content) === 1 && $this->rootView->is_file($path)) {
 						return strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'sharekey' ;
 					}
@@ -134,10 +144,13 @@ class CleanOrphanedKeys extends Command {
 	}
 	private function deleteAll(array $keys, OutputInterface $output) {
 		foreach ($keys as $key) {
-			if ($this->rootView->unlink($key)) {
+			$file = $this->rootFolder->get($key);
+			try {
+				$file->delete();
 				$output->writeln('Key deleted: ' . $key);
-			} else {
-				$output->writeln('Failed to delete: ' . $key);
+			} catch (Exception $e) {
+				$output->writeln('Failed to delete  ' . $key);
+				$this->logger->error('Error when deleting orphaned key ' . $key . '. ' . $e->getMessage());
 			}
 		}
 	}
@@ -148,17 +161,23 @@ class CleanOrphanedKeys extends Command {
 		if (!in_array(trim($path), $orphanedKeys)) {
 			$output->writeln('Wrong key path');
 		} else {
-			$this->rootView->unlink(trim($path));
+			try {
+				$this->rootFolder->get(trim($path))->delete();
+				$output->writeln('Key deleted: ' . $key);
+			} catch (Exception $e) {
+				$output->writeln('Failed to delete  ' . $key);
+				$this->logger->error('Error when deleting orphaned key ' . $key . '. ' . $e->getMessage());
+			}
 			$orphanedKeys = array_filter($orphanedKeys, function ($k) use ($path) {
 				return $k !== trim($path);
 			});
 		}
+		if (count($orphanedKeys) == 0) {
+			return;
+		}
 		$output->writeln('Remaining orphaned keys: ');
 		foreach ($orphanedKeys as $keyPath) {
 			$output->writeln($keyPath);
-		}
-		if (count($orphanedKeys) == 0) {
-			return;
 		}
 		$question = new ConfirmationQuestion('Do you want to delete more orphaned keys? (y/n) ', false);
 		if ($this->questionHelper->ask($input, $output, $question)) {
