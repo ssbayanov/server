@@ -16,28 +16,32 @@ use PHPUnit\Framework\Attributes\TestWith;
 use Test\TestCase;
 
 class SnowflakeTest extends TestCase {
-	#[TestWith(data: [true, true, 42.0])] // 42ms
-	#[TestWith(data: [true, false, 42.0])]
-	#[TestWith(data: [false, true, 42.0])]
-	#[TestWith(data: [true, false, 42.0])]
-	#[TestWith(data: [false, true, 1000.0 * 60 * 60 * 24 * 365 * 10])] // ~10 years
-	#[TestWith(data: [false, false, 1000.0 * 60 * 60 * 24 * 365 * 10])]
-	public function testLayout(bool $isCLIExpected, bool $is32BitsSystem, float $timeDiff): void {
-		$baseTimestamp = strtotime('2025-01-01') * 1000.0;
+	#[TestWith(data: [true, true, 42])] // 42ms
+	#[TestWith(data: [true, false, 42])]
+	#[TestWith(data: [false, true, 42])]
+	#[TestWith(data: [true, false, 42])]
+	#[TestWith(data: [false, true, 60 * 60 * 24 * 365 * 10])] // ~10 years
+	#[TestWith(data: [false, false, 60 * 60 * 24 * 365 * 10])]
+	public function testLayout(bool $isCLIExpected, bool $is32BitsSystem, int $timeDiff): void {
+		$baseTimestamp = strtotime('2025-01-01');
 		$resolver = $this->createMock(NextcloudSequenceResolver::class);
 		$resolver->method('isAvailable')->willReturn(true);
-		$resolver->method('sequence')->willReturnCallback(function ($time) use ($baseTimestamp, $timeDiff) {
-			$this->assertEqualsWithDelta($baseTimestamp + $timeDiff, $time, 0.01);
-			return 42;
-		});
+		$resolver->method('sequence')->willReturn(42);
 
 		$snowFlake = $this->getMockBuilder(SnowflakeGenerator::class)
 			->setConstructorArgs([21, 22, $resolver, $isCLIExpected])
 			->onlyMethods(['getCurrentMillisecond', 'is32BitsSystem'])
 			->getMock();
 
-		$snowFlake->method('getCurrentMillisecond')
-			->willReturn($baseTimestamp + $timeDiff);
+		if (PHP_INT_SIZE < 8) {
+			$timeDiffString = gmp_strval(gmp_mul($timeDiff, 1000));
+			$snowFlake->method('getCurrentMillisecond')
+				->willReturn(gmp_strval(gmp_mul(gmp_add($baseTimestamp, $timeDiff), 1000)));
+		} else {
+			$timeDiffString = (string)($timeDiff * 1000);
+			$snowFlake->method('getCurrentMillisecond')
+				->willReturn((string)(($baseTimestamp + $timeDiff) * 1000));
+		}
 
 		$snowFlake->method('is32BitsSystem')
 			->willReturn($is32BitsSystem);
@@ -57,12 +61,12 @@ class SnowflakeTest extends TestCase {
 		$this->assertEquals(22, $workerId);
 		$this->assertEquals(21, $datacenter);
 		$this->assertEquals($isCLIExpected, $isCLI);
-		$this->assertEquals($timeDiff, $timestamp);
+		$this->assertEquals($timeDiffString, $timestamp);
 		$this->assertEquals(42, $sequence);
 	}
 
 	public function testSetStartTimeStamp(): void {
 		$generator = new SnowflakeGenerator(21, 22, $this->createMock(NextcloudSequenceResolver::class), true);
-		$generator->setStartTimeStamp((float)strtotime('2025-01-01') * 1000);
+		$generator->setStartTimeStamp(strtotime('2025-01-01'));
 	}
 }

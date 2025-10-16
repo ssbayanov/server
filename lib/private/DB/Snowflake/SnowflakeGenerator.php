@@ -31,12 +31,12 @@ class SnowflakeGenerator {
 	/**
 	 * The start timestamp.
 	 */
-	protected ?float $startTime = null;
+	protected ?string $startTime = null;
 
 	/**
 	 * The last timestamp for the random generator.
 	 */
-	protected float $lastTimeStamp = -1;
+	protected string $lastTimeStamp = '-1';
 
 	/**
 	 * The sequence number for the random generator.
@@ -64,7 +64,7 @@ class SnowflakeGenerator {
 	 * @internal For unit tests only.
 	 */
 	public function is32BitsSystem(): bool {
-		return 2147483647 === PHP_INT_MAX;
+		return PHP_INT_SIZE === 4;
 	}
 
 	/**
@@ -86,7 +86,7 @@ class SnowflakeGenerator {
 		$timestampLeftMoveLength = self::MAX_DATACENTER_LENGTH + $datacenterLeftMoveLength;
 
 		if ($this->is32BitsSystem()) {
-			// Slow version for 32-bits machine using string concatenation
+			// Version using gmp for 32-bits machine
 			if (!function_exists('gmp_init')
 				|| !function_exists('gmp_sub')
 				|| !function_exists('gmp_add')
@@ -97,8 +97,8 @@ class SnowflakeGenerator {
 				throw new \RuntimeException('gmp is a required extension on 32bits system.');
 			}
 
-			$currentTimeGmp = gmp_init((string)round($currentTime));
-			$timestampGmp = gmp_init((string)round($timestamp));
+			$currentTimeGmp = gmp_init($currentTime);
+			$timestampGmp = gmp_init($timestamp);
 
 			$gmpShiftLeft = static function (\GMP $num, int $bits): \GMP {
 				return gmp_mul($num, gmp_pow(2, $bits));
@@ -114,8 +114,8 @@ class SnowflakeGenerator {
 
 			return gmp_strval($id);
 		} else {
-			// Faster version for 64-bits machine using bits-shifts
-			return (string)(((int)($currentTime - $timestamp) << $timestampLeftMoveLength)
+			// Dependency less version for 64-bits machine using bits-shifts
+			return (string)((((int)$currentTime - (int)$timestamp) << $timestampLeftMoveLength)
 				| ($this->datacenter << $datacenterLeftMoveLength)
 				| ($this->workerId << $workerLeftMoveLength)
 				| ((int)$this->isCLI << $isCLILeftMoveLength)
@@ -171,30 +171,51 @@ class SnowflakeGenerator {
 	 * Get current millisecond time.
 	 * @internal For unit tests only.
 	 */
-	public function getCurrentMillisecond(): float {
-		return floor(microtime(true) * 1000.0);
+	public function getCurrentMillisecond(): string {
+		if ($this->is32BitsSystem()) {
+			return gmp_strval(gmp_mul(microtime(), 1000));
+		} else {
+			return (string)floor(microtime(true) * 1000);
+		}
 	}
 
 	/**
-	 * Set start time (millisecond).
+	 * Set start time (second).
 	 * @throw \InvalidArgumentException
 	 */
-	public function setStartTimeStamp(float $millisecond): self {
-		$missTime = $this->getCurrentMillisecond() - $millisecond;
+	public function setStartTimeStamp(int $second): self {
+		if ($this->is32BitsSystem()) {
+			$missTime = gmp_sub($this->getCurrentMillisecond(), gmp_mul($second, 1000));
 
-		if ($missTime < 0) {
-			throw new \InvalidArgumentException('The start time cannot be greater than the current time');
+			if (gmp_cmp($missTime, 0) < 0) {
+				throw new \InvalidArgumentException('The start time cannot be greater than the current time');
+			}
+			$mask = gmp_init(-1);
+			$shifted = gmp_mul(gmp_init(-1), gmp_pow(2, self::MAX_TIMESTAMP_LENGTH)); // -1 << n
+			$maxTimeDiff = gmp_xor($mask, $shifted);
+
+			if (gmp_cmp($missTime, $maxTimeDiff) > 0) {
+				throw new \InvalidArgumentException(
+					sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
+				);
+			}
+			$this->startTime = gmp_strval(gmp_mul($second, 1000));
+		} else {
+			$missTime = (int)$this->getCurrentMillisecond() - $second * 1000;
+
+			if ($missTime < 0) {
+				throw new \InvalidArgumentException('The start time cannot be greater than the current time');
+			}
+
+			$maxTimeDiff = -1 ^ (-1 << self::MAX_TIMESTAMP_LENGTH);
+
+			if ($missTime > $maxTimeDiff) {
+				throw new \InvalidArgumentException(
+					sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
+				);
+			}
+			$this->startTime = (string)($second * 1000);
 		}
-
-		$maxTimeDiff = -1 ^ (-1 << self::MAX_TIMESTAMP_LENGTH);
-
-		if ($missTime > $maxTimeDiff && $maxTimeDiff === -1) {
-			throw new \InvalidArgumentException(
-				sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
-			);
-		}
-
-		$this->startTime = $millisecond;
 
 		return $this;
 	}
@@ -202,19 +223,23 @@ class SnowflakeGenerator {
 	/**
 	 * Get start timestamp (millisecond), If not set default to 2019-08-08 08:08:08.
 	 */
-	public function getStartTimeStamp(): float|int {
+	public function getStartTimeStamp(): string {
 		if (! is_null($this->startTime)) {
 			return $this->startTime;
 		}
 
 		// We set a default start time if you not set.
-		return strtotime('2025-01-01') * 1000;
+		if ($this->is32BitsSystem()) {
+			return gmp_strval(gmp_mul(strtotime('2025-01-01'), 1000));
+		} else {
+			return (string)(strtotime('2025-01-01') * 1000);
+		}
 	}
 
 	/**
 	 * Call resolver.
 	 */
-	protected function callResolver(float $currentTime): int {
+	protected function callResolver(string $currentTime): int {
 		// Memcache based resolver
 		if ($this->sequenceResolver->isAvailable()) {
 			return $this->sequenceResolver->sequence($currentTime);

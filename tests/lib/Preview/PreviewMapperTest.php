@@ -56,7 +56,7 @@ class PreviewMapperTest extends TestCase {
 		$locationId = null;
 		if ($bucket) {
 			$qb = $this->connection->getQueryBuilder();
-			$locationId = $this->snowflake->id();
+			$locationId = $this->snowflake->nextId();
 			$qb->insert('preview_locations')
 				->values([
 					'id' => $locationId,

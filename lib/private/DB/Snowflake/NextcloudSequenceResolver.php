@@ -30,11 +30,11 @@ class NextcloudSequenceResolver {
 		return $this->localCache instanceof IMemcache;
 	}
 
-	public function sequence(float $currentTime): int {
-		if ($this->localCache->add((string)$currentTime, 1, 10)) {
+	public function sequence(string $currentTime): int {
+		if ($this->localCache->add($currentTime, 1, 10)) {
 			return 0;
 		}
 
-		return $this->localCache->inc((string)$currentTime, 1) | 0;
+		return $this->localCache->inc($currentTime, 1) | 0;
 	}
 }
