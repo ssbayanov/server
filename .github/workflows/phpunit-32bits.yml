@@ -69,4 +69,5 @@ jobs:
           php -f tests/enable_all.php
 
       - name: PHPUnit
-        run: lib/composer/bin/phpunit --fail-on-warning --fail-on-risky --display-warnings --display-deprecations --display-phpunit-deprecations --colors=always --configuration tests/phpunit-autotest.xml --exclude-group PRIMARY-azure,PRIMARY-s3,PRIMARY-swift,Memcached,Redis,RoutingWeirdness ../tests/lib/Preview/
+        run: composer run test -- --exclude-group PRIMARY-azure,PRIMARY-s3,PRIMARY-swift,Memcached,Redis,RoutingWeirdness
+
