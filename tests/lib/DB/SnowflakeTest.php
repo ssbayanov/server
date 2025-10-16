@@ -12,6 +12,7 @@ namespace Test\DB;
 
 use OC\DB\Snowflake\NextcloudSequenceResolver;
 use OC\DB\Snowflake\SnowflakeGenerator;
+use OCP\Server;
 use PHPUnit\Framework\Attributes\TestWith;
 use Test\TestCase;
 
@@ -69,9 +70,58 @@ class SnowflakeTest extends TestCase {
 		$this->assertEquals(42, $sequence);
 	}
 
+	#[TestWith(data: [true, true])]
+	#[TestWith(data: [true, false])]
+	#[TestWith(data: [false, true])]
+	#[TestWith(data: [false, false])]
+	public function testRandomSequence(bool $random, bool $is32BitsSystem): void {
+		if (!$is32BitsSystem && PHP_INT_SIZE < 8) {
+			$this->markTestSkipped('Unable to run 64 bits code on 32 bits system.');
+		}
+
+		$baseTimestamp = strtotime('2025-01-01');
+		if ($random) {
+			$resolver = $this->createMock(NextcloudSequenceResolver::class);
+			$resolver->method('isAvailable')->willReturn(false);
+		} else {
+			$resolver = Server::get(NextcloudSequenceResolver::class);
+			$this->assertTrue($resolver->isAvailable());
+		}
+
+		$snowFlake = $this->getMockBuilder(SnowflakeGenerator::class)
+			->setConstructorArgs([21, 22, $resolver, true])
+			->onlyMethods(['getCurrentMillisecond', 'is32BitsSystem'])
+			->getMock();
+
+		$timeDiff = 42;
+		if (PHP_INT_SIZE < 8) {
+			$snowFlake->method('getCurrentMillisecond')
+				->willReturn(gmp_strval(gmp_mul(gmp_add($baseTimestamp, $timeDiff), 1000)));
+		} else {
+			$snowFlake->method('getCurrentMillisecond')
+				->willReturn((string)(($baseTimestamp + $timeDiff) * 1000));
+		}
+
+		$snowFlake->method('is32BitsSystem')
+			->willReturn($is32BitsSystem);
+
+		$snowFlake->setStartTimeStamp($baseTimestamp);
+
+		$ids = [];
+		for ($i = 0; $i < 20; $i++) {
+			$ids[] = $snowFlake->nextId();
+		}
+
+		$this->assertEquals($ids, array_unique($ids));
+	}
+
 	#[TestWith(data: [true])]
 	#[TestWith(data: [false])]
 	public function testSetStartTimeStamp(bool $is32BitsSystem): void {
+		if (!$is32BitsSystem && PHP_INT_SIZE < 8) {
+			$this->markTestSkipped('Unable to run 64 bits code on 32 bits system.');
+		}
+
 		$generator = $this->getMockBuilder(SnowflakeGenerator::class)
 			->setConstructorArgs([21, 22, $this->createMock(NextcloudSequenceResolver::class), true])
 			->onlyMethods(['is32BitsSystem'])
