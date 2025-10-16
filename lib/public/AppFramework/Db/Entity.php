@@ -114,9 +114,7 @@ abstract class Entity {
 			switch ($type) {
 				case Types::BIGINT:
 				case Types::SMALLINT:
-					if ($name !== 'id') {
-						settype($args[0], Types::INTEGER);
-					}
+					settype($args[0], Types::INTEGER);
 					break;
 				case Types::BINARY:
 				case Types::DECIMAL:
@@ -145,7 +143,10 @@ abstract class Entity {
 					}
 					break;
 				default:
-					settype($args[0], $type);
+					if ($name !== 'id') {
+						// ID can be either an int or a string. Don't update it.
+						settype($args[0], $type);
+					}
 			}
 		}
 		$this->$name = $args[0];
