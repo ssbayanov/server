@@ -29,8 +29,8 @@ use OCP\Server;
  * @method void setOldFileId(int $oldFileId)
  * @method string getLocationId() Get the location id in the preview_locations table. Only set when using an object store as primary storage.
  * @method void setLocationId(string $locationId)
- * @method string getBucketName() Get the bucket name where the preview is stored. This is stored in the preview_locations table.
- * @method string getObjectStoreName() Get the object store name where the preview is stored. This is stored in the preview_locations table.
+ * @method string|null getBucketName() Get the bucket name where the preview is stored. This is stored in the preview_locations table.
+ * @method string|null getObjectStoreName() Get the object store name where the preview is stored. This is stored in the preview_locations table.
  * @method int getWidth() Get the width of the preview.
  * @method void setWidth(int $width)
  * @method int getHeight() Get the height of the preview.

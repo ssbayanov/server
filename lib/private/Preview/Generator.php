@@ -542,6 +542,8 @@ class Generator {
 		}
 		$previewEntry->setSize($size);
 
+		echo "Inserting preview with id: " . $previewEntry->getId() . PHP_EOL;
+
 		return $this->previewMapper->insert($previewEntry);
 	}
 }
