@@ -65,8 +65,17 @@ class SnowflakeTest extends TestCase {
 		$this->assertEquals(42, $sequence);
 	}
 
-	public function testSetStartTimeStamp(): void {
-		$generator = new SnowflakeGenerator(21, 22, $this->createMock(NextcloudSequenceResolver::class), true);
+	#[TestWith(data: [true])]
+	#[TestWith(data: [false])]
+	public function testSetStartTimeStamp(bool $is32BitsSystem): void {
+		$generator = $this->getMockBuilder(SnowflakeGenerator::class)
+			->setConstructorArgs([21, 22, $this->createMock(NextcloudSequenceResolver::class), true])
+			->onlyMethods(['is32BitsSystem'])
+			->getMock();
+
+		$generator->method('is32BitsSystem')
+			->willReturn($is32BitsSystem);
 		$generator->setStartTimeStamp(strtotime('2025-01-01'));
+		$this->assertEquals('1735689600000', $generator->getStartTimeStamp());
 	}
 }
