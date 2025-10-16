@@ -202,7 +202,7 @@ class SnowflakeGenerator {
 
 			if (gmp_cmp($missTime, $maxTimeDiff) > 0) {
 				throw new \InvalidArgumentException(
-					sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
+					sprintf('The current microtime - starttime is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', self::MAX_TIMESTAMP_LENGTH)
 				);
 			}
 			$this->startTime = gmp_strval(gmp_mul($second, 1000));
@@ -217,7 +217,7 @@ class SnowflakeGenerator {
 
 			if ($missTime > $maxTimeDiff) {
 				throw new \InvalidArgumentException(
-					sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
+					sprintf('The current microtime - starttime is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', self::MAX_TIMESTAMP_LENGTH)
 				);
 			}
 			$this->startTime = (string)($second * 1000);
