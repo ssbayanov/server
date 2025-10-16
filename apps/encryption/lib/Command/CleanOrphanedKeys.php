@@ -9,10 +9,10 @@ declare(strict_types=1);
 namespace OCA\Encryption\Command;
 
 use OC\Encryption\Util;
-use OC\Files\Node\Folder;
 use OC\Files\SetupManager;
-use OC\Files\View;
 use OCA\Encryption\Crypto\Encryption;
+use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IConfig;
@@ -28,7 +28,6 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
 class CleanOrphanedKeys extends Command {
-	private View $rootView;
 
 	public function __construct(
 		protected IConfig $config,
@@ -41,7 +40,6 @@ class CleanOrphanedKeys extends Command {
 	) {
 		parent::__construct();
 
-		$this->rootView = new View();
 	}
 
 	protected function configure(): void {
@@ -107,8 +105,12 @@ class CleanOrphanedKeys extends Command {
 				$this->logger->error('Reached unexpected state when scanning user\'s filesystem for orphaned encryption keys' . $path);
 			} elseif ($stopValue) {
 				$filePath = str_replace('files_encryption/keys/', '', $path);
-				if (!$this->rootView->file_exists($filePath)) {
+				try {
+					$this->rootFolder->get($filePath);
+				} catch (NotFoundException $e) {
+					// We found an orphaned key
 					$orphanedKeys[] = $path;
+					continue;
 				}
 			} else {
 				$orphanedKeys = array_merge($orphanedKeys, $this->scanFolder($output, $path, $user));
@@ -124,16 +126,14 @@ class CleanOrphanedKeys extends Command {
 	 */
 	private function stopCondition(string $path) : ?bool {
 		$folder = $this->rootFolder->get($path);
-		if ($this->rootView->is_dir($path)) {
+		if ($folder instanceof Folder) {
 			$content = $folder->getDirectoryListing();
-
-			if (count($content) === 1 && $content[0]->getName() === Encryption::ID) {
-				$path = $path . '/' . $content[0]->getName();
-				if ($this->rootView->is_dir($path)) {
-					$content = $this->rootView->getDirectoryContent($path);
-					$path = $path . '/' . $content[0]->getName();
-					if (count($content) === 1 && $this->rootView->is_file($path)) {
-						return strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'sharekey' ;
+			$subfolder = $content[0];
+			if (count($content) === 1 && $subfolder->getName() === Encryption::ID) {
+				if ($subfolder instanceof Folder) {
+					$content = $subfolder->getDirectoryListing();
+					if (count($content) === 1 && $content[0] instanceof File) {
+						return strtolower($content[0]->getExtension()) === 'sharekey' ;
 					}
 				}
 			}
@@ -163,10 +163,10 @@ class CleanOrphanedKeys extends Command {
 		} else {
 			try {
 				$this->rootFolder->get(trim($path))->delete();
-				$output->writeln('Key deleted: ' . $key);
+				$output->writeln('Key deleted: ' . $path);
 			} catch (Exception $e) {
-				$output->writeln('Failed to delete  ' . $key);
-				$this->logger->error('Error when deleting orphaned key ' . $key . '. ' . $e->getMessage());
+				$output->writeln('Failed to delete  ' . $path);
+				$this->logger->error('Error when deleting orphaned key ' . $path . '. ' . $e->getMessage());
 			}
 			$orphanedKeys = array_filter($orphanedKeys, function ($k) use ($path) {
 				return $k !== trim($path);
