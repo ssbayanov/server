@@ -23,6 +23,10 @@ class SnowflakeTest extends TestCase {
 	#[TestWith(data: [false, true, 60 * 60 * 24 * 365 * 10])] // ~10 years
 	#[TestWith(data: [false, false, 60 * 60 * 24 * 365 * 10])]
 	public function testLayout(bool $isCLIExpected, bool $is32BitsSystem, int $timeDiff): void {
+		if (!$is32BitsSystem && PHP_INT_SIZE < 8) {
+			$this->markTestSkipped('Unable to run 64 bits code on 32 bits system.');
+		}
+
 		$baseTimestamp = strtotime('2025-01-01');
 		$resolver = $this->createMock(NextcloudSequenceResolver::class);
 		$resolver->method('isAvailable')->willReturn(true);

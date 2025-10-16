@@ -172,9 +172,13 @@ class SnowflakeGenerator {
 	 * @internal For unit tests only.
 	 */
 	public function getCurrentMillisecond(): string {
-		$time = microtime();
-		$time = explode(' ', $time);
-		return $time[1] . floor((float)$time[0] * 1000);
+		if ($this->is32BitsSystem()) {
+			$time = microtime();
+			$time = explode(' ', $time);
+			return $time[1] . str_pad((string)floor((float)$time[0] * 1000), 3, '0', STR_PAD_LEFT);
+		} else {
+			return (string)(floor(microtime(true) * 1000));
+		}
 	}
 
 	/**
@@ -183,6 +187,10 @@ class SnowflakeGenerator {
 	 */
 	public function setStartTimeStamp(int $second): self {
 		if ($this->is32BitsSystem()) {
+			if (!function_exists('gmp_init')) {
+				throw new \RuntimeException('gmp is a required extension to run on 32 bit system.');
+			}
+
 			$missTime = gmp_sub($this->getCurrentMillisecond(), gmp_mul($second, 1000));
 
 			if (gmp_cmp($missTime, 0) < 0) {
@@ -202,7 +210,7 @@ class SnowflakeGenerator {
 			$missTime = (int)$this->getCurrentMillisecond() - $second * 1000;
 
 			if ($missTime < 0) {
-				throw new \InvalidArgumentException('The start time cannot be greater than the current time');
+				throw new \InvalidArgumentException('The start time cannot be greater than the current time. starttime=' . $second * 1000 . ' current=' . $this->getCurrentMillisecond());
 			}
 
 			$maxTimeDiff = -1 ^ (-1 << self::MAX_TIMESTAMP_LENGTH);
