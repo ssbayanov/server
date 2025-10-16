@@ -60,4 +60,9 @@ class SnowflakeTest extends TestCase {
 		$this->assertEquals($timeDiff, $timestamp);
 		$this->assertEquals(42, $sequence);
 	}
+
+	public function testSetStartTimeStamp(): void {
+		$generator = new SnowflakeGenerator(21, 22, $this->createMock(NextcloudSequenceResolver::class), true);
+		$generator->setStartTimeStamp((float)strtotime('2025-01-01') * 1000);
+	}
 }

@@ -172,7 +172,7 @@ class SnowflakeGenerator {
 	 * @internal For unit tests only.
 	 */
 	public function getCurrentMillisecond(): float {
-		return microtime(true) * 1000;
+		return floor(microtime(true) * 1000.0);
 	}
 
 	/**
@@ -188,8 +188,15 @@ class SnowflakeGenerator {
 
 		$maxTimeDiff = -1 ^ (-1 << self::MAX_TIMESTAMP_LENGTH);
 
+		echo "maxTimeDiff:" . $maxTimeDiff . PHP_EOL;
+		echo "missTime:" . $missTime . PHP_EOL;
+		echo "current:" . $this->getCurrentMillisecond() . PHP_EOL;
+		echo "mili:" . $millisecond . PHP_EOL;
+
 		if ($missTime > $maxTimeDiff) {
-			throw new \InvalidArgumentException(sprintf('The current microtime - starttime is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', self::MAX_TIMESTAMP_LENGTH));
+			throw new \InvalidArgumentException(
+				sprintf('The current microtime (%f) - starttime (%f) is not allowed to exceed -1 ^ (-1 << %d), You can reset the start time to fix this', $missTime, $maxTimeDiff, self::MAX_TIMESTAMP_LENGTH)
+			);
 		}
 
 		$this->startTime = $millisecond;

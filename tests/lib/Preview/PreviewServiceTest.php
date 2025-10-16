@@ -20,7 +20,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * @group DB
  */
-#[CoversClass(PreviewService::class)]
 class PreviewServiceTest extends TestCase {
 	private PreviewService $previewService;
 	private PreviewMapper $previewMapper;

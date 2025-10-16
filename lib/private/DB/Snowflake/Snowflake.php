@@ -30,7 +30,7 @@ class Snowflake implements ISnowflake {
 				$resolver,
 				$isCLI,
 			);
-			$generator->setStartTimeStamp((float)strtotime('2025-01-01') * 1000);
+			$generator->setStartTimeStamp((float)strtotime('2025-01-01') * 1000.0);
 			self::$generators[$key] = $generator;
 		}
 		return self::$generators[$key];
