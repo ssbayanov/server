@@ -114,7 +114,9 @@ abstract class Entity {
 			switch ($type) {
 				case Types::BIGINT:
 				case Types::SMALLINT:
-					settype($args[0], Types::INTEGER);
+					if ($name !== 'id') {
+						settype($args[0], Types::INTEGER);
+					}
 					break;
 				case Types::BINARY:
 				case Types::DECIMAL:
