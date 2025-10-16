@@ -168,15 +168,13 @@ class SnowflakeGenerator {
 	}
 
 	/**
-	 * Get current millisecond time.
+	 * Get current millisecond time as a string.
 	 * @internal For unit tests only.
 	 */
 	public function getCurrentMillisecond(): string {
-		if ($this->is32BitsSystem()) {
-			return gmp_strval(gmp_mul(microtime(), 1000));
-		} else {
-			return (string)floor(microtime(true) * 1000);
-		}
+		$time = microtime();
+		$time = explode(' ', $time);
+		return $time[1] . floor((float)$time[0] * 1000);
 	}
 
 	/**
