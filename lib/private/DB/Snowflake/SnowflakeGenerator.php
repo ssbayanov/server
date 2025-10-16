@@ -97,6 +97,8 @@ class SnowflakeGenerator {
 				throw new \RuntimeException('gmp is a required extension on 32bits system.');
 			}
 
+			echo "Using 32 bits version" . PHP_EOL;
+
 			$currentTimeGmp = gmp_init($currentTime);
 			$timestampGmp = gmp_init($timestamp);
 
@@ -112,8 +114,12 @@ class SnowflakeGenerator {
 
 			$id = gmp_add(gmp_add(gmp_add(gmp_add($tsPart, $dcPart), $wkPart), $cliPart), $seqPart);
 
-			return gmp_strval($id);
+			$result = gmp_strval($id);
+			echo "generated id:" . $id . PHP_EOL;
+			return $result;
 		} else {
+			echo "Using 64 bits version" . PHP_EOL;
+
 			// Dependency less version for 64-bits machine using bits-shifts
 			return (string)((((int)$currentTime - (int)$timestamp) << $timestampLeftMoveLength)
 				| ($this->datacenter << $datacenterLeftMoveLength)
