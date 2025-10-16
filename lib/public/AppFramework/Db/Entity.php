@@ -19,7 +19,8 @@ use function substr;
  * @psalm-consistent-constructor
  */
 abstract class Entity {
-	public int|string|null $id = null;
+	/** @var int $id */
+	public $id = null;
 
 	private array $_updatedFields = [];
 	/** @var array<string, \OCP\DB\Types::*> */
