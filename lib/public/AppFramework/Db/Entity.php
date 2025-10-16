@@ -19,10 +19,7 @@ use function substr;
  * @psalm-consistent-constructor
  */
 abstract class Entity {
-	/**
-	 * @var int
-	 */
-	public $id;
+	public int|string|null $id = null;
 
 	private array $_updatedFields = [];
 	/** @var array<string, \OCP\DB\Types::*> */
@@ -143,10 +140,7 @@ abstract class Entity {
 					}
 					break;
 				default:
-					if ($name !== 'id') {
-						// ID can be either an int or a string. Don't update it.
-						settype($args[0], $type);
-					}
+					settype($args[0], $type);
 			}
 		}
 		$this->$name = $args[0];

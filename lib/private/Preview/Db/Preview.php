@@ -15,6 +15,7 @@ use OCP\DB\ISnowflake;
 use OCP\DB\Types;
 use OCP\Files\IMimeTypeDetector;
 use OCP\Server;
+use Override;
 
 /**
  * Preview entity mapped to the oc_previews and oc_preview_locations table.
@@ -95,7 +96,8 @@ class Preview extends Entity {
 		$this->addType('encrypted', Types::BOOLEAN);
 		$this->addType('etag', Types::STRING);
 		$this->addType('versionId', Types::STRING);
-		$this->setId(Server::get(ISnowflake::class)->nextId());
+		$this->id = Server::get(ISnowflake::class)->nextId();
+		$this->markFieldUpdated('id');
 	}
 
 	public static function fromPath(string $path, IMimeTypeDetector $mimeTypeDetector): Preview|false {

@@ -171,6 +171,15 @@ class EntityTest extends \Test\TestCase {
 		$this->assertEquals($entity2, $this->entity);
 	}
 
+
+	public function testIdGetsConvertedToInt(): void {
+		$row = ['id' => '4'];
+
+		$this->entity = TestEntity::fromRow($row);
+		$this->assertSame(4, $this->entity->getId());
+	}
+
+
 	public function testSetType(): void {
 		$row = ['testId' => '4'];
 
@@ -203,8 +212,7 @@ class EntityTest extends \Test\TestCase {
 
 	public static function dataSetterCasts(): array {
 		return [
-			['Id', '3', '3'], // Don't cast ids, these can be big numbers
-			['Id', 3, 3],
+			['Id', '3', 3],
 			['smallInt', '3', 3],
 			['bigInt', '' . PHP_INT_MAX, PHP_INT_MAX],
 			['trueOrFalse', 0, false],
