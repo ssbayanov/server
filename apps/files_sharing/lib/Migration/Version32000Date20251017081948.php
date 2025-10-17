@@ -17,7 +17,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 use Override;
 
-#[ModifyColumn('share_external', 'owner', ColumnType::STRING, 'Change length to 255 characters')]
+#[ModifyColumn(table: 'share_external', name: 'owner', type: ColumnType::STRING, description: 'Change length to 255 characters')]
 class Version32000Date20251017081948 extends SimpleMigrationStep {
 	/**
 	 * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
